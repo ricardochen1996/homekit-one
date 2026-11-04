@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>设备</h1>
+
+{% if not devices %}
+  <div class="card">
+    <p>还没有设备。先到 <a href="/setup">配置</a> 添加米家、TCL 或树新风账号/设备。</p>
+    <p class="muted">如果没有真实设备，删除配置文件后重启会进入演示模式（4 台虚拟设备）。</p>
+  </div>
+{% else %}
+<table>
+  <thead>
+    <tr><th>名称</th><th>来源</th><th>类型</th><th>状态</th><th>当前值</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for d in devices %}
+    <tr>
+      <td><strong>{{ d.name }}</strong><br><span class="muted">{{ d.model }}</span></td>
+      <td>{{ d.provider }}</td>
+      <td>{{ kind_labels.get(d.kind, d.kind) }}</td>
+      <td>
+        {% if d.online %}<span class="ok">在线</span>
+        {% elif d.error %}<span class="bad">离线</span>
+        {% else %}<span class="muted">等待首次连接</span>{% endif %}
+        {% if d.error %}<br><span class="muted" style="font-size:12px">{{ d.error }}</span>{% endif %}
+      </td>
+      <td>
+        {% for cap, val in d.state.items() %}
+          <span class="chip">{{ cap_labels.get(cap, cap) }}: {{ val }}</span>
+        {% endfor %}
+      </td>
+      <td>
+        <form method="post" action="/api/devices/{{ d.id }}/refresh">
+          <button type="submit">刷新</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>Provider</h2>
+<div class="grid">
+  {% for p in providers %}
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <strong>{{ p.name }}</strong>
+      <span class="muted">{{ p.devices }} 台</span>
+    </div>
+    {% if p.last_error %}<p class="bad" style="font-size:13px">{{ p.last_error }}</p>
+    {% else %}<p class="muted" style="font-size:13px">运行正常</p>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Apple 家庭</h2>
+<div class="card">
+  {% if pairing %}
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <p style="margin:0">配对码 <span class="code">{{ pairing.pincode }}</span></p>
+        <p class="muted" style="margin:4px 0 0">
+          {% if pairing.paired %}已配对。若家庭 App 里设备无响应，检查 Mac 是否休眠、防火墙是否放行。{% else %}尚未配对，打开「家庭」→ + → 添加配件，扫描二维码。{% endif %}
+        </p>
+      </div>
+      <a href="/pairing"><button class="primary">查看二维码</button></a>
+    </div>
+  {% else %}
+    <p class="muted">本次启动未启用 HomeKit（--no-homekit）。</p>
+  {% endif %}
+</div>
+
+<p class="muted" style="margin-top:24px">
+  配置目录 {{ config.state_dir }} · Web {{ config.gateway.web_host }}:{{ config.gateway.web_port }} · HomeKit 端口 {{ config.gateway.homekit_port }}
+</p>
+{% endblock %}

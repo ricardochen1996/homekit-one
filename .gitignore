@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.DS_Store
+
+# Never commit credentials or pairing state.
+config.toml
+secrets.json
+devices.json
+accessory.state
+*.log
+
+# Local agent settings
+.claude/
+pairing.json
+tcl_session.json
+miot_specs/

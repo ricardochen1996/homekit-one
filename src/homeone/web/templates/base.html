@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ config.gateway.name }} · HomeOne</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f9; --card: #fff; --text: #17181c; --muted: #6b7280;
+      --line: #e5e7eb; --accent: #2563eb; --ok: #047857; --bad: #b91c1c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #111318; --card: #1a1d24; --text: #e8eaee; --muted: #9aa3b2;
+              --line: #2a2f3a; --accent: #6ea8fe; --ok: #34d399; --bad: #f87171; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+           background: var(--bg); color: var(--text); }
+    header { background: var(--card); border-bottom: 1px solid var(--line); }
+    nav { max-width: 1100px; margin: 0 auto; padding: 14px 20px; display: flex; gap: 18px; align-items: center; }
+    nav a { color: var(--muted); text-decoration: none; font-weight: 500; }
+    nav a:hover, nav a.active { color: var(--accent); }
+    nav .brand { color: var(--text); font-weight: 700; margin-right: 8px; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+    h1 { font-size: 24px; margin: 0 0 16px; }
+    h2 { font-size: 17px; margin: 26px 0 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+    .muted { color: var(--muted); }
+    .ok { color: var(--ok); }
+    .bad { color: var(--bad); }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-size: 13px; font-weight: 600; }
+    tr:last-child td { border-bottom: 0; }
+    .chip { display: inline-block; padding: 2px 8px; margin: 2px 4px 2px 0; border-radius: 999px;
+            background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: 12px; }
+    input, select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+                    background: var(--card); color: var(--text); min-width: 0; }
+    form.inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+    label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+    button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+             background: var(--card); color: var(--text); cursor: pointer; }
+    button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+    button.danger { color: var(--bad); }
+    .qr { background: #fff; padding: 12px; border-radius: 12px; display: inline-block; }
+    .code { font: 600 22px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 1px; }
+    .notice { border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--card); border-radius: 6px; }
+    @media (max-width: 640px) { th:nth-child(3), td:nth-child(3) { display: none; } }
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <span class="brand">{{ config.gateway.name }}</span>
+    <a href="/">设备</a>
+    <a href="/setup">配置</a>
+    <a href="/pairing">HomeKit</a>
+    <a href="/logs">日志</a>
+    <span style="flex:1"></span>
+    <span class="muted" style="font-size:13px">HomeOne</span>
+  </nav>
+</header>
+<main>
+  {% if message %}<p class="notice ok">{{ message }}</p>{% endif %}
+  {% if error %}<p class="notice bad">{{ error }}</p>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Apple 家庭配对</h1>
+{% if pairing %}
+<div class="grid">
+  <div class="card">
+    <div class="qr"><img src="/pairing/qr.png" alt="HomeKit 配对二维码" width="220" height="220"></div>
+    <p>配对码 <span class="code">{{ pairing.pincode }}</span></p>
+    <p class="muted">X-HM URI: <code>{{ pairing.uri }}</code></p>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">步骤</h2>
+    <ol>
+      <li>确认 iPhone 与 Mac mini 在同一个局域网。</li>
+      <li>打开「家庭」App → 右上角 + → 添加配件。</li>
+      <li>扫描左侧二维码，或在「更多选项」里手动输入配对码。</li>
+      <li>提示“未认证配件”时选择“仍然添加”。</li>
+    </ol>
+    <p class="muted">配对状态：{% if pairing.paired %}<span class="ok">已配对</span>{% else %}未配对{% endif %}</p>
+    {% if pairing.paired %}
+    <form method="post" action="/pairing/reset">
+      <button class="danger" type="submit">清除所有配对并重启</button>
+    </form>
+    <p class="muted" style="font-size:13px">清除后需要重新扫码。家庭 App 里的旧配件需要手动删除。</p>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="card"><p class="muted">本次启动未启用 HomeKit（--no-homekit）。</p></div>
+{% endif %}
+
+<h2>边界</h2>
+<div class="card">
+  <p class="muted">HomeKit 通过局域网 HAP 通信。Mac 休眠、退出进程或防火墙拦截时，家庭 App 会显示无响应。外网访问需要 HomePod / Apple TV 作为家居中枢。</p>
+</div>
+{% endblock %}

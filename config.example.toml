@@ -1,0 +1,79 @@
+# Copy to ~/.config/homeone/config.toml (or pass --config) and edit.
+# Credentials can live here, in secrets.json (managed by the web UI), or in
+# environment variables. Environment variables win over this file.
+
+[gateway]
+name = "HomeOne"
+# The web UI binds to loopback by default. Change to 0.0.0.0 only if you
+# understand that anyone on your LAN can then reconfigure the gateway.
+web_host = "127.0.0.1"
+web_port = 8080
+homekit_port = 51234
+# Leave empty to generate and persist a pincode on first start.
+# homekit_pincode = "031-45-678"
+log_level = "INFO"
+# state_dir = "~/Library/Application Support/HomeOne"
+
+[gateway.poll_intervals]
+mijia = 5
+tcl = 20
+treeow = 8
+fake = 30
+
+# Demo provider. Enabled automatically when no real provider is configured.
+[providers.fake]
+enabled = false
+
+[providers.mijia]
+enabled = false
+poll_interval = 5
+
+# Devices can also be added from the web UI; they are stored in
+# $STATE_DIR/devices.json and merged with this list.
+[[providers.mijia.devices]]
+id = "0x12345678"
+name = "客厅净化器"
+model = "zhimi.airpurifier.rma1"
+host = "192.168.1.20"
+# Prefer secrets.json or HONE_MIJIA_TOKEN_0X12345678 instead of committing a token.
+# token = "PASTE_32_HEX_TOKEN_HERE"
+
+# Xiaomi cloud provider. Use this for hub sub-devices (Zigbee / BLE Mesh)
+# that have no LAN token/IP. Requires a Xiaomi account and internet.
+# The account region must match where the devices were registered.
+[providers.mijia_cloud]
+enabled = false
+poll_interval = 15
+country = "cn"
+# username = "you@example.com"
+# password = "..."
+# Optional allow-list of Xiaomi device ids (did). Empty means all.
+# devices = ["1234567890"]
+
+[providers.tcl]
+enabled = false
+poll_interval = 20
+# username = "you@example.com"
+# Optional allow-list of TCL device ids. Empty means all devices on the account.
+# devices = ["1234567890"]
+# workMode values differ between TCL firmware revisions. Defaults:
+# auto=0, cool=1, dry=2, fan=3, heat=4
+
+# TCL+ 国内版（微信小程序/国内 App），用于国内电视/空调。
+# 与上面的 [providers.tcl]（国际版 TCL Home）是两套云，不能混用。
+[providers.tcl_plus]
+enabled = false
+poll_interval = 15
+# phone = "13800138000"
+# password = "..."
+# 或者用抓包得到的 token：
+# account_id = "..."
+# refresh_token = "..."
+# devices = ["12345678"]
+
+[providers.treeow]
+enabled = false
+poll_interval = 8
+# account = "13800000000"
+# Optional allow-list of device serials. Empty means all devices on the account.
+# devices = ["T2PRO-XXXXXXXX"]

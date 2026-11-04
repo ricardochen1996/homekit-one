@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<meta http-equiv="refresh" content="5">
+<h1>日志</h1>
+<p class="muted">最近 {{ records|length }} 条（内存缓冲，重启后清空）。</p>
+<table>
+  <thead><tr><th style="width:80px">时间</th><th style="width:70px">级别</th><th style="width:190px">来源</th><th>内容</th></tr></thead>
+  <tbody>
+  {% for r in records|reverse %}
+    <tr>
+      <td class="muted">{{ r.time }}</td>
+      <td class="{% if r.level == 'ERROR' %}bad{% elif r.level == 'WARNING' %}muted{% endif %}">{{ r.level }}</td>
+      <td class="muted">{{ r.logger }}</td>
+      <td>{{ r.message }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
