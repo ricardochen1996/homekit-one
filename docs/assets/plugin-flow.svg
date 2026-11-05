@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="640" viewBox="0 0 1160 640" role="img" aria-labelledby="plugTitle plugDesc">
+  <title id="plugTitle">Provider plugin lifecycle</title>
+  <desc id="plugDesc">A provider implements list_devices, refresh and execute, declares a ProviderPlugin and registers it either as a built-in or through the homekit_one.providers entry point. The runtime builds enabled providers, the device manager polls them, and HomeKit plus the web UI stay unchanged.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#64748b"/>
+    </marker>
+    <style>
+      .title { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 21px; font-weight: 700; fill: #0f172a; }
+      .subtitle { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 12.5px; fill: #64748b; }
+      .section { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 1.4px; fill: #64748b; }
+      .card-title { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; }
+      .body { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 11.5px; fill: #475569; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; fill: #1e293b; }
+      .label { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 10.5px; fill: #64748b; }
+      .foot { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 12px; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect width="1160" height="640" fill="#ffffff"/>
+
+  <text x="40" y="44" class="title">Provider plugin lifecycle</text>
+  <text x="40" y="68" class="subtitle">A new device family is a provider plus one registration. The HomeKit layer never changes.</text>
+
+  <!-- author column -->
+  <text x="40" y="100" class="section">AUTHOR ONCE</text>
+
+  <rect x="40" y="116" width="420" height="112" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <circle cx="62" cy="140" r="11" fill="#dbeafe"/>
+  <text x="62" y="144" text-anchor="middle" class="mono" font-weight="700" fill="#1d4ed8">1</text>
+  <text x="82" y="145" class="card-title">Implement Provider</text>
+  <rect x="60" y="160" width="112" height="26" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+  <text x="116" y="177" text-anchor="middle" class="mono">list_devices()</text>
+  <rect x="180" y="160" width="112" height="26" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+  <text x="236" y="177" text-anchor="middle" class="mono">refresh(device)</text>
+  <rect x="300" y="160" width="140" height="26" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+  <text x="370" y="177" text-anchor="middle" class="mono">execute(device, cmd)</text>
+  <text x="60" y="210" class="body">Translate your protocol into <tspan class="mono">Capability</tspan> / <tspan class="mono">DeviceKind</tspan>.</text>
+
+  <line x1="250" y1="228" x2="250" y2="244" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="252" width="420" height="112" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <circle cx="62" cy="276" r="11" fill="#e2e8f0"/>
+  <text x="62" y="280" text-anchor="middle" class="mono" font-weight="700" fill="#334155">2</text>
+  <text x="82" y="281" class="card-title">Declare ProviderPlugin</text>
+  <text x="60" y="308" class="body"><tspan class="mono">name · label · description</tspan></text>
+  <text x="60" y="327" class="body"><tspan class="mono">setup_fields</tspan> → a generated web form</text>
+  <text x="60" y="346" class="body"><tspan class="mono">factory(config, secrets, state_dir, registry)</tspan></text>
+
+  <line x1="250" y1="364" x2="250" y2="380" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="388" width="420" height="112" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <circle cx="62" cy="412" r="11" fill="#e2e8f0"/>
+  <text x="62" y="416" text-anchor="middle" class="mono" font-weight="700" fill="#334155">3</text>
+  <text x="82" y="417" class="card-title">Register</text>
+  <text x="60" y="441" class="body">Built-in: <tspan class="mono">register(PLUGIN)</tspan> in <tspan class="mono">providers/builtin.py</tspan></text>
+  <text x="60" y="460" class="body">Package: entry point <tspan class="mono">homekit_one.providers</tspan></text>
+  <text x="60" y="479" class="body">Loaded via <tspan class="mono">importlib.metadata</tspan>; failures are isolated.</text>
+
+  <!-- registration connector -->
+  <polyline points="460,444 530,444 530,152 592,152" fill="none" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="468" y="437" class="label" fill="#7c3aed">register()</text>
+
+  <!-- runtime column -->
+  <text x="600" y="100" class="section">RUNTIME</text>
+
+  <rect x="600" y="116" width="520" height="72" rx="12" fill="#f5f3ff" stroke="#ddd6fe"/>
+  <text x="620" y="144" class="card-title" fill="#5b21b6">Provider registry</text>
+  <text x="620" y="164" class="body">built-in plugins + discovered entry points</text>
+
+  <line x1="860" y1="188" x2="860" y2="196" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="600" y="204" width="520" height="72" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="620" y="232" class="card-title">build_providers()</text>
+  <text x="620" y="252" class="body">enabled check · one failing plugin cannot stop startup</text>
+
+  <line x1="860" y1="276" x2="860" y2="284" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="600" y="292" width="520" height="72" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="620" y="320" class="card-title">DeviceManager</text>
+  <text x="620" y="340" class="body">polling · command queue · optimistic update / rollback</text>
+
+  <line x1="860" y1="364" x2="860" y2="372" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="600" y="380" width="520" height="72" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="620" y="408" class="card-title" fill="#1d4ed8">HomeKit bridge + Web UI</text>
+  <text x="620" y="428" class="body">no provider-specific code in this layer</text>
+
+  <!-- setup band -->
+  <rect x="40" y="520" width="1080" height="64" rx="12" fill="#f5f3ff" stroke="#ddd6fe"/>
+  <text x="60" y="545" class="card-title" font-size="12.5" fill="#6d28d9">Setup form for free</text>
+  <text x="60" y="566" class="body">Declare <tspan class="mono">setup_fields</tspan> and the web setup page renders the credential form, saves <tspan class="mono">secrets.json</tspan>, and flips <tspan class="mono">[providers.&lt;name&gt;] enabled = true</tspan>.</text>
+
+  <text x="40" y="618" class="foot">The HomeKit layer stays the same: new device families only implement the provider contract.</text>
+</svg>
