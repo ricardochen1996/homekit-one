@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from homeone.providers.mijia_cloud.client import XiaomiCloudClient
+from homekit_one.providers.mijia_cloud.client import XiaomiCloudClient
 
 
 def test_api_base_regions(tmp_path):

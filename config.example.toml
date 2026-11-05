@@ -1,22 +1,35 @@
-# Copy to ~/.config/homeone/config.toml (or pass --config) and edit.
+# Copy to ~/.config/homekit-one/config.toml (or pass --config) and edit.
 # Credentials can live here, in secrets.json (managed by the web UI), or in
 # environment variables. Environment variables win over this file.
+#
+# Most people do not need to edit this file: start the gateway and use the web
+# setup page (http://127.0.0.1:8080/setup). It saves credentials to
+# secrets.json, verifies them immediately, lists devices, and flips the
+# matching provider's `enabled` flag. Use this file for allow-lists, poll
+# intervals and other advanced options.
 
 [gateway]
-name = "HomeOne"
+name = "HomeKit One"
 # The web UI binds to loopback by default. Change to 0.0.0.0 only if you
 # understand that anyone on your LAN can then reconfigure the gateway.
 web_host = "127.0.0.1"
 web_port = 8080
 homekit_port = 51234
+# Optional: advertise a specific LAN address to HomeKit. By default the
+# physical LAN interface is detected, which avoids VPN/utun addresses.
+# homekit_address = "192.168.1.20"
+# Extra feature switches: minimal (recommended), auto, all, or none.
+# minimal keeps HomeKit to native services + readings; extra switches are only
+# exposed for lights and thermostats. Everything else stays configurable in the
+# gateway web UI.
+extra_switches = "minimal"
 # Leave empty to generate and persist a pincode on first start.
 # homekit_pincode = "031-45-678"
 log_level = "INFO"
-# state_dir = "~/Library/Application Support/HomeOne"
+# state_dir = "~/Library/Application Support/HomeKit One"
 
 [gateway.poll_intervals]
 mijia = 5
-tcl = 20
 treeow = 8
 fake = 30
 
@@ -35,7 +48,7 @@ id = "0x12345678"
 name = "客厅净化器"
 model = "zhimi.airpurifier.rma1"
 host = "192.168.1.20"
-# Prefer secrets.json or HONE_MIJIA_TOKEN_0X12345678 instead of committing a token.
+# Prefer secrets.json or HOMEKIT_ONE_MIJIA_TOKEN_0X12345678 instead of committing a token.
 # token = "PASTE_32_HEX_TOKEN_HERE"
 
 # Xiaomi cloud provider. Use this for hub sub-devices (Zigbee / BLE Mesh)
@@ -49,27 +62,6 @@ country = "cn"
 # password = "..."
 # Optional allow-list of Xiaomi device ids (did). Empty means all.
 # devices = ["1234567890"]
-
-[providers.tcl]
-enabled = false
-poll_interval = 20
-# username = "you@example.com"
-# Optional allow-list of TCL device ids. Empty means all devices on the account.
-# devices = ["1234567890"]
-# workMode values differ between TCL firmware revisions. Defaults:
-# auto=0, cool=1, dry=2, fan=3, heat=4
-
-# TCL+ 国内版（微信小程序/国内 App），用于国内电视/空调。
-# 与上面的 [providers.tcl]（国际版 TCL Home）是两套云，不能混用。
-[providers.tcl_plus]
-enabled = false
-poll_interval = 15
-# phone = "13800138000"
-# password = "..."
-# 或者用抓包得到的 token：
-# account_id = "..."
-# refresh_token = "..."
-# devices = ["12345678"]
 
 [providers.treeow]
 enabled = false

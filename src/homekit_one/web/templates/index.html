@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>设备</h1>
+
+{% if demo_mode %}
+<div class="notice">
+  <strong>当前是演示模式：</strong>下面的设备是虚拟的，用来确认 Web / HomeKit 链路正常。
+  接入真实设备后重启会自动关闭演示模式；也可以到 <a href="/setup">配置页</a> 开始接入。
+</div>
+{% endif %}
+
+{% if not devices %}
+  <div class="card">
+    <p>还没有设备。</p>
+    <p class="muted">打开配置页，选择品牌账号登录或扫描米家局域网设备；保存时会立即验证并列出可接入设备。</p>
+    <p><a class="button primary" href="/setup">去接入设备 →</a></p>
+    <p class="muted" style="font-size:13px">没有真实设备时，删除配置文件后重启会进入演示模式（4 台虚拟设备）。</p>
+  </div>
+{% else %}
+<table>
+  <thead>
+    <tr><th>名称</th><th>来源</th><th>类型</th><th>状态</th><th>当前值</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for d in devices %}
+    <tr>
+      <td><strong>{{ d.name }}</strong><br><span class="muted">{{ d.model }}</span></td>
+      <td>{{ d.provider }}</td>
+      <td>{{ kind_labels.get(d.kind, d.kind) }}</td>
+      <td>
+        {% if d.online %}<span class="ok">在线</span>
+        {% elif d.error %}<span class="bad">离线</span>
+        {% else %}<span class="muted">等待首次连接</span>{% endif %}
+        {% if d.error %}<br><span class="muted" style="font-size:12px">{{ d.error }}</span>{% endif %}
+      </td>
+      <td>
+        {% if d.readings %}
+        <div style="margin-bottom:4px">
+          <span class="muted" style="font-size:11px">只读</span>
+          {% for cap, val in d.readings.items() %}
+            <span class="chip">{{ cap_labels.get(cap, cap) }}: {% if val is sameas true %}开{% elif val is sameas false %}关{% elif cap|string == 'mode' %}{{ mode_labels.get(val|string, val) }}{% else %}{{ val }}{% endif %}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if d.controls %}
+        <div>
+          <span class="muted" style="font-size:11px">可控</span>
+          {% for cap, val in d.controls.items() %}
+            <span class="chip">{{ cap_labels.get(cap, cap) }}: {% if val is sameas true %}开{% elif val is sameas false %}关{% elif cap|string == 'mode' %}{{ mode_labels.get(val|string, val) }}{% else %}{{ val }}{% endif %}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </td>
+      <td>
+        <div class="row" style="flex-wrap:nowrap">
+          <a class="button" href="/devices/{{ d.id }}" style="font-size:13px">详情/配置</a>
+          <form method="post" action="/devices/{{ d.id }}/refresh">
+            <button type="submit" style="font-size:13px">刷新</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>Provider</h2>
+<div class="grid">
+  {% for p in providers %}
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <strong>{{ provider_labels.get(p.name, '演示设备' if p.name == 'fake' else p.name) }}</strong>
+      <span class="muted">{{ p.devices }} 台</span>
+    </div>
+    {% if p.last_error %}<p class="bad" style="font-size:13px">{{ p.last_error }}</p>
+    {% else %}<p class="muted" style="font-size:13px">运行正常</p>{% endif %}
+    {% if p.name != 'fake' %}
+    <p style="margin-bottom:0"><a href="/setup#{{ p.name }}" style="font-size:13px">查看 / 重新验证 →</a></p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Apple 家庭</h2>
+<div class="card">
+  {% if pairing %}
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <p style="margin:0">配对码 <span class="code">{{ pairing.pincode }}</span></p>
+        <p class="muted" style="margin:4px 0 0">
+          {% if pairing.paired %}已配对。若家庭 App 里设备无响应，检查 Mac 是否休眠、防火墙是否放行。{% else %}尚未配对，打开「家庭」→ + → 添加配件，扫描二维码。{% endif %}
+        </p>
+      </div>
+      <a href="/pairing"><button class="primary">查看二维码</button></a>
+    </div>
+  {% else %}
+    <p class="muted">本次启动未启用 HomeKit（--no-homekit）。</p>
+  {% endif %}
+</div>
+
+<p class="muted" style="margin-top:24px">
+  配置目录 {{ config.state_dir }} · Web {{ config.gateway.web_host }}:{{ config.gateway.web_port }} · HomeKit 端口 {{ config.gateway.homekit_port }}
+</p>
+{% endblock %}

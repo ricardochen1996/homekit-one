@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="device-content">
+{% set provider_name = provider_labels.get(device.provider, device.provider) %}
+<div class="row" style="justify-content:space-between; align-items:flex-start">
+  <div>
+    <h1 style="margin-bottom:4px">{{ device.name }}</h1>
+    <p class="muted" style="margin:0">
+      {{ provider_name }} · {{ kind_labels.get(device.kind|string, device.kind) }}
+      {% if device.model %} · <span class="mono">{{ device.model }}</span>{% endif %}
+    </p>
+  </div>
+  <div class="row">
+    <form method="post" action="/devices/{{ device.id }}/refresh" class="ajax">
+      <button type="submit">刷新状态</button>
+    </form>
+    <a class="button" href="/">← 返回设备</a>
+  </div>
+</div>
+
+<p style="margin-top:12px">
+  {% if device.online %}<span class="pill ok">在线</span>
+  {% else %}<span class="pill bad">离线</span>{% endif %}
+  {% if device.error %}<span class="muted" style="font-size:13px">{{ device.error }}</span>{% endif %}
+</p>
+<p class="notice" style="font-size:13px">
+  Home App 默认只保留主控和只读参数；这里的配置项可以直接控制设备当前状态。
+</p>
+
+<h2>只读参数</h2>
+<div class="card">
+  {% if device.readings %}
+  <div class="reading-grid">
+    {% for cap, val in device.readings.items() %}
+    <div class="reading">
+      <span class="muted">{{ cap_labels.get(cap|string, cap) }}</span>
+      <strong>{% if val is sameas true %}开{% elif val is sameas false %}关{% elif cap|string == 'mode' %}{{ mode_labels.get(val|string, val) }}{% else %}{{ val }}{% endif %}{% if cap_units.get(cap|string) %} <span class="muted" style="font-size:12px">{{ cap_units.get(cap|string) }}</span>{% endif %}</strong>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">暂无只读参数。</p>
+  {% endif %}
+</div>
+
+<h2>配置 / 控制</h2>
+<div class="card">
+  {% if device.writable %}
+  <div class="control-list">
+    {% for cap in device.writable|sort %}
+    {% set cs = cap|string %}
+    {% set current = device.state.get(cap, "") %}
+    <div class="control-row">
+      <div>
+        <strong>{{ cap_labels.get(cs, cs) }}</strong>
+        <span class="muted" style="font-size:12px">当前：
+          {% if current is sameas true %}开{% elif current is sameas false %}关{% elif cs == 'mode' %}{{ mode_labels.get(current|string, current) }}{% else %}{{ current if current != "" else "—" }}{% endif %}
+          {% if cap_units.get(cs) %}{{ cap_units.get(cs) }}{% endif %}</span>
+      </div>
+      {% if cs in bool_capabilities %}
+      <form method="post" action="/devices/{{ device.id }}/set" class="inline ajax">
+        <input type="hidden" name="capability" value="{{ cs }}">
+        <input type="hidden" name="value" value="{{ 'false' if current else 'true' }}">
+        <button type="submit" class="{{ 'danger' if current else 'primary' }}">
+          {{ '关闭' if current else '打开' }}
+        </button>
+      </form>
+      {% elif cs == 'mode' %}
+      <form method="post" action="/devices/{{ device.id }}/set" class="inline ajax">
+        <input type="hidden" name="capability" value="{{ cs }}">
+        <select name="value">
+          {% for option in mode_options %}
+          <option value="{{ option }}" {% if current|string == option %}selected{% endif %}>{{ mode_labels.get(option, option) }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">设置</button>
+      </form>
+      {% elif cs == 'filter_reset' %}
+      <form method="post" action="/devices/{{ device.id }}/set" class="inline ajax">
+        <input type="hidden" name="capability" value="{{ cs }}">
+        <input type="hidden" name="value" value="true">
+        <button type="submit">执行复位</button>
+      </form>
+      {% elif cs in int_capabilities or cs in ('target_temperature', 'current_temperature') %}
+      <form method="post" action="/devices/{{ device.id }}/set" class="inline ajax">
+        <input type="hidden" name="capability" value="{{ cs }}">
+        <input type="number" name="value" value="{{ current }}"
+               step="{{ '0.5' if cs in ('target_temperature', 'current_temperature') else '100' if cs == 'color_temp' else '1' }}"
+               style="width:110px">
+        <button type="submit">设置</button>
+      </form>
+      {% else %}
+      <form method="post" action="/devices/{{ device.id }}/set" class="inline ajax">
+        <input type="hidden" name="capability" value="{{ cs }}">
+        <input name="value" value="{{ current }}" style="width:160px">
+        <button type="submit">设置</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">这台设备没有可配置项。</p>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

@@ -5,18 +5,18 @@ from typing import Any
 
 import pytest
 
-from homeone.config import Config, FakeConfig, GatewayConfig
-from homeone.core.manager import DeviceManager
-from homeone.core.model import Capability, Command, Device, DeviceKind
-from homeone.providers.base import Provider
-from homeone.providers.fake import FakeProvider
+from homekit_one.config import Config, FakeConfig, GatewayConfig
+from homekit_one.core.manager import DeviceManager
+from homekit_one.core.model import Capability, Command, Device, DeviceKind
+from homekit_one.providers.base import Provider
+from homekit_one.providers.fake import FakeProvider
 
 
 def _config(tmp_path) -> Config:
     return Config(
         gateway=GatewayConfig(
             state_dir=tmp_path,
-            poll_intervals={"fake": 0.05, "mijia": 1, "tcl": 1, "treeow": 1},
+            poll_intervals={"fake": 0.05, "mijia": 1, "treeow": 1},
         ),
         fake=FakeConfig(enabled=True),
     )

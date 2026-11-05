@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 
-from homeone.core.model import Capability, Command, Mode
-from homeone.providers.treeow.mapping import decode_props, encode_command
-from homeone.providers.treeow.provider import _extract_props
+from homekit_one.core.model import Capability, Command, Mode
+from homekit_one.providers.treeow.mapping import decode_props, encode_command
+from homekit_one.providers.treeow.provider import _extract_props
 
 
 def test_decode_props():
@@ -58,3 +58,62 @@ def test_extract_props_from_device_info():
 def test_extract_props_handles_bad_json():
     assert _extract_props({"props": [{"value": "not-json"}]}) == {}
     assert _extract_props({"props": []}) == {}
+
+
+def test_decode_extended_features():
+    values = decode_props(
+        {
+            "ch2o_value": 18,
+            "filter_days": 160,
+            "uv": True,
+            "anion": False,
+            "speaker_onoff": True,
+            "smart_mode_switch": False,
+            "smart_night_switch": True,
+            "online_state": 0,
+        }
+    )
+    assert values[Capability.VOC] == 18.0
+    assert values[Capability.FILTER_DAYS] == 160
+    assert values[Capability.UV] is True
+    assert values[Capability.ANION] is False
+    assert values[Capability.BUZZER] is True
+    assert values[Capability.SMART_MODE] is False
+    assert values[Capability.SMART_NIGHT] is True
+
+
+def test_encode_extended_features():
+    assert encode_command(Command(Capability.UV, False)) == [("uv", False)]
+    assert encode_command(Command(Capability.ANION, True)) == [("anion", True)]
+    assert encode_command(Command(Capability.BUZZER, False)) == [
+        ("speaker_onoff", False)
+    ]
+    assert encode_command(Command(Capability.SMART_MODE, True)) == [
+        ("smart_mode_switch", True)
+    ]
+    assert encode_command(Command(Capability.SMART_NIGHT, False)) == [
+        ("smart_night_switch", False)
+    ]
+    assert encode_command(Command(Capability.FILTER_RESET, True)) == [
+        ("filter_reset", True),
+        ("filter_warn_reset", True),
+    ]
+
+
+def test_fan_speed_full_means_comfort():
+    assert encode_command(Command(Capability.FAN_SPEED, 100)) == [
+        ("mode", 2),
+        ("fan_speed_enum", 6),
+    ]
+
+
+def test_online_state_zero_means_online():
+    from homekit_one.providers.treeow.mapping import online_state_is_offline
+
+    assert online_state_is_offline({"online_state": 0}) is False
+    assert online_state_is_offline({"online_state": "0"}) is False
+    assert online_state_is_offline({"online_state": 1}) is True
+    assert online_state_is_offline({"online_state": "1"}) is True
+    assert online_state_is_offline({"online_state": False}) is True
+    assert online_state_is_offline({"online_state": True}) is False
+    assert online_state_is_offline({}) is False

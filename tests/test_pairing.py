@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from homeone.homekit.bridge import resolve_pincode
+from homekit_one.homekit.bridge import resolve_pincode
 
 
 def test_pincode_is_stable_and_private(tmp_path):

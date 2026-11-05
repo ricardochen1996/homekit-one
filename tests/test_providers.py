@@ -3,13 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from homeone.config import MijiaConfig, MijiaDeviceConfig, TclConfig, TreeowConfig
-from homeone.core.model import Capability, Command, DeviceKind, Mode
-from homeone.providers.mijia.provider import MijiaProvider
-from homeone.providers.tcl.provider import TclProvider
-from homeone.providers.treeow.provider import TreeowProvider
-from homeone.registry import DeviceRegistry
-from homeone.secrets import SecretsStore
+from homekit_one.config import MijiaConfig, MijiaDeviceConfig, TreeowConfig
+from homekit_one.core.model import Capability, Command, DeviceKind, Mode
+from homekit_one.providers.mijia.provider import MijiaProvider
+from homekit_one.providers.treeow.provider import TreeowProvider
+from homekit_one.registry import DeviceRegistry
+from homekit_one.secrets import SecretsStore
 
 
 def _secrets(tmp_path: Path) -> SecretsStore:
@@ -60,67 +59,6 @@ async def test_mijia_provider_refresh_and_execute(tmp_path):
 
     await provider.execute(device, Command(Capability.POWER, False))
     assert fake.writes == [(2, 1, 0)]
-
-
-class FakeTclCloud:
-    def __init__(self) -> None:
-        self.desired: list[tuple[str, dict[str, Any]]] = []
-
-    async def ensure_session(self):
-        return None
-
-    async def get_things(self):
-        return [
-            {
-                "device_id": "ac1",
-                "device_name": "Split AC",
-                "nick_name": "客厅空调",
-                "is_online": 1,
-            },
-            {"device_id": "pur1", "device_name": "breeva A2", "is_online": 1},
-        ]
-
-    async def get_shadow(self, device_id: str):
-        return {
-            "state": {
-                "reported": {
-                    "powerSwitch": 1,
-                    "targetTemperature": 24,
-                    "currentTemperature": 26,
-                    "workMode": 1,
-                    "windSpeed": 4,
-                    "verticalSwitch": 0,
-                }
-            }
-        }
-
-    async def set_desired(self, device_id: str, desired: dict[str, Any]):
-        self.desired.append((device_id, desired))
-
-    async def close(self):
-        return None
-
-
-async def test_tcl_provider(tmp_path):
-    config = TclConfig(enabled=True, username="u", password="p")
-    provider = TclProvider(config, _secrets(tmp_path), tmp_path)
-    fake = FakeTclCloud()
-    provider.cloud = fake  # type: ignore[assignment]
-    await provider.start()
-
-    devices = await provider.list_devices()
-    assert len(devices) == 1  # breeva is filtered out in this release
-    device = devices[0]
-    assert device.kind is DeviceKind.AC
-    assert device.name == "客厅空调"
-
-    values = await provider.refresh(device)
-    assert values[Capability.POWER] is True
-    assert values[Capability.MODE] == Mode.COOL.value
-    assert values[Capability.FAN_SPEED] == 50
-
-    await provider.execute(device, Command(Capability.TARGET_TEMP, 25.4))
-    assert fake.desired == [("ac1", {"targetTemperature": 25})]
 
 
 class FakeTreeowAPI:

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>小米 OAuth 授权</h1>
+
+<ol class="steps">
+  <li><strong>打开授权页</strong><span>用小米账号登录，支持两步验证</span></li>
+  <li><strong>复制回调地址</strong><span>授权后浏览器跳转的页面可能打不开，这是正常的</span></li>
+  <li><strong>粘贴回来</strong><span>网关会换取并保存 token</span></li>
+</ol>
+
+<div class="card">
+  <p class="muted">授权页显示的应用名可能是
+    “Xiaomi Home (Home Assistant Integration)”，这是复用公开 client id 的正常现象。
+    token 只保存在本机 <code>secrets.json</code>（0600）。</p>
+  <p>
+    <a class="button primary" href="{{ auth_url }}" target="_blank" rel="noopener">打开小米授权页</a>
+  </p>
+  <p class="muted" style="font-size:13px">如果按钮没有反应，把下面的地址复制到浏览器：</p>
+  <p class="mono" style="word-break:break-all">{{ auth_url }}</p>
+
+  <h2 style="margin-top:20px">粘贴回调地址</h2>
+  <p class="muted">授权完成后，浏览器会跳转到
+    <code>{{ redirect_uri }}</code>。页面打不开没关系；
+    从地址栏复制完整 URL（含 <code>code=...</code>），或只粘贴 <code>code</code>。</p>
+  <form method="post" action="/setup/mijia-cloud/oauth/callback">
+    <input type="hidden" name="device_id" value="{{ device_id }}">
+    <input type="hidden" name="country" value="{{ country }}">
+    <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+    <label>回调地址或 code
+      <input name="callback" required autocomplete="off" style="width:100%"
+             placeholder="http://homeassistant.local:8123/?code=...&state=...">
+    </label>
+    <p><button class="primary" type="submit">完成授权并验证</button></p>
+  </form>
+
+  <details>
+    <summary>区域 / 回调地址（一般不用改）</summary>
+    <form method="get" action="/setup/mijia-cloud/oauth" class="inline" style="margin-top:10px">
+      <label>区域
+        <select name="country">
+          {% for code, label in [('cn', '大陆'), ('de', '欧洲'), ('us', '美国'), ('sg', '新加坡'), ('ru', '俄罗斯'), ('tw', '台湾')] %}
+          <option value="{{ code }}" {% if country == code %}selected{% endif %}>{{ label }} ({{ code }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>redirect_uri<input name="redirect_uri" value="{{ redirect_uri }}" style="width:320px"></label>
+      <button type="submit">重新生成授权地址</button>
+    </form>
+    <p class="muted" style="font-size:13px">默认回调地址是小米为该公开 client 注册的地址，
+      随意修改可能导致授权页报 <code>redirect_uri</code> 错误。</p>
+  </details>
+</div>
+
+<p><a href="/setup">← 返回配置</a></p>
+{% endblock %}

@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% macro render_report(report) %}
+{% if report %}
+<div class="report {{ report.level }}">
+  <p><strong>{{ report.summary }}</strong>
+    <span class="muted" style="font-size:12px">· {{ report.checked_at }}</span></p>
+  {% if report.hint %}<p class="muted">{{ report.hint }}</p>{% endif %}
+  {% for warning in report.warnings %}
+    <p class="bad" style="font-size:13px">{{ warning }}</p>
+  {% endfor %}
+  {% if report.devices %}
+  <div class="table-wrap">
+    <table style="margin-top:8px">
+      <thead><tr><th>设备</th><th>ID</th><th>类型</th><th>状态</th><th>属性</th></tr></thead>
+      <tbody>
+      {% for d in report.devices %}
+        <tr>
+          <td><strong>{{ d.name }}</strong><br><span class="muted mono">{{ d.model }}</span></td>
+          <td class="mono">{{ d.id }}</td>
+          <td>{{ kind_labels.get(d.kind, d.kind) }}</td>
+          <td>
+            {% if d.reachable %}<span class="ok">状态正常</span>
+            {% elif d.reachable is sameas false %}
+              <span class="bad">读取失败</span>
+              {% if d.error %}<br><span class="muted" style="font-size:12px">{{ d.error }}</span>{% endif %}
+            {% elif d.online %}<span class="muted">在线</span>
+            {% else %}<span class="muted">未读取</span>{% endif %}
+          </td>
+          <td>
+            {% for cap, val in d.state.items() %}
+              <span class="chip">{{ cap_labels.get(cap, cap) }}: {{ val }}</span>
+            {% endfor %}
+            {% if not d.state %}<span class="muted">—</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro device_allow_list(provider, report, allow_list) %}
+{% if report and report.devices %}
+<form method="post" action="/setup/{{ provider }}/devices" class="allow-list ajax">
+  <p style="margin:0"><strong>选择要接入 HomeKit 的设备</strong>
+    <span class="muted">不勾选任何设备表示接入账号下全部受支持设备</span></p>
+  {% for d in report.devices %}
+  <label class="check">
+    <input type="checkbox" name="devices" value="{{ d.id }}"
+           {% if not allow_list or d.id in allow_list %}checked{% endif %}>
+    <span>{{ d.name }}</span>
+    <span class="muted mono">{{ d.id }}</span>
+  </label>
+  {% endfor %}
+  <p style="margin:8px 0 0"><button class="small" type="submit">保存白名单</button></p>
+</form>
+{% endif %}
+{% endmacro %}
+
+{% block content %}
+<div id="setup-content">
+<h1>接入设备</h1>
+<ol class="steps">
+  <li><strong>登录品牌账号</strong><span>保存时立即验证，并列出能接入的设备</span></li>
+  <li><strong>重启网关</strong><span>让新设备加载到 HomeKit</span></li>
+  <li><strong>扫码配对</strong><span>用 iPhone「家庭」App 添加</span></li>
+</ol>
+<p class="notice">凭据保存在 <code>{{ config.state_dir }}/secrets.json</code>（权限 0600）。
+  每个品牌可以单独启用；保存后页面顶部会出现重启提示。</p>
+
+{# ---------------------------------------------------------------- 米家云 #}
+<section id="mijia-cloud">
+  <div class="row" style="justify-content:space-between; margin-top:26px">
+    <h2 style="margin:0">米家云（中枢子设备）</h2>
+    {% if provider_enabled.get('mijia_cloud') %}<span class="pill ok">已启用</span>
+    {% elif mijia_oauth_saved %}<span class="pill warn">OAuth 已授权 · 未启用</span>
+    {% elif mijia_cloud_saved %}<span class="pill warn">已保存密码 · 未启用</span>
+    {% else %}<span class="pill">未配置</span>{% endif %}
+  </div>
+  <div class="card">
+    {% if provider_errors.get('mijia_cloud') %}<p class="bad" style="font-size:13px">最近一次连接错误：{{ provider_errors.get('mijia_cloud') }}</p>{% endif %}
+    <p class="muted">用于中枢下的 Zigbee / BLE Mesh 子设备，以及没有局域网 token 的米家设备。
+      <strong>推荐 OAuth</strong>：浏览器里完成登录，支持两步验证，不需要把小米密码保存在本机。</p>
+    <div class="row actions">
+      <form method="get" action="/setup/mijia-cloud/oauth" class="inline">
+        <label>账号区域
+          <select name="country">
+            {% for code, label in [('cn', '大陆'), ('de', '欧洲'), ('us', '美国'), ('sg', '新加坡'), ('ru', '俄罗斯'), ('tw', '台湾')] %}
+            <option value="{{ code }}" {% if mijia_country == code %}selected{% endif %}>{{ label }} ({{ code }})</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button class="primary" type="submit">
+          {% if mijia_oauth_saved %}重新授权{% else %}小米 OAuth 授权（推荐）{% endif %}
+        </button>
+      </form>
+      {% if mijia_oauth_saved or mijia_cloud_saved %}
+      <form method="post" action="/setup/mijia-cloud/verify" class="ajax">
+        <button type="submit">验证并列出设备</button>
+      </form>
+      {% endif %}
+      {% if not provider_enabled.get('mijia_cloud') and (mijia_oauth_saved or mijia_cloud_saved) %}
+      <form method="post" action="/setup/mijia_cloud/enable" class="ajax">
+        <button type="submit">启用</button>
+      </form>
+      {% endif %}
+      {% if mijia_oauth_saved %}
+      <form method="post" action="/setup/mijia-cloud/oauth/clear" class="ajax">
+        <button class="danger" type="submit">清除授权</button>
+      </form>
+      {% endif %}
+    </div>
+    {% if not mijia_oauth_saved %}
+    <details>
+      <summary>用旧版账号密码（不推荐；小米近年经常返回 403）</summary>
+      <form method="post" action="/setup/mijia-cloud" class="inline ajax" style="margin-top:10px">
+        <input type="hidden" name="verify" value="1">
+        <label>小米账号<input name="username" autocomplete="username" placeholder="手机号 / 邮箱"></label>
+        <label>密码<input name="password" type="password" autocomplete="current-password" placeholder="留空表示不修改"></label>
+        <label>区域<input name="country" value="{{ mijia_country }}" style="width:70px" title="大陆账号填 cn"></label>
+        <button type="submit">保存并验证</button>
+      </form>
+      <p class="muted" style="font-size:13px">开启两步验证的账号通常无法用密码登录；失败时请改用上面的 OAuth。</p>
+    </details>
+    {% endif %}
+    {{ render_report(reports.get('mijia_cloud')) }}
+    {{ device_allow_list('mijia_cloud', reports.get('mijia_cloud'), allow_lists.get('mijia_cloud', [])) }}
+    {% if provider_enabled.get('mijia_cloud') %}
+    <div class="row actions secondary">
+      <form method="post" action="/setup/mijia_cloud/disable" class="ajax">
+        <button class="danger small" type="submit">停用米家云</button>
+      </form>
+      <span class="muted" style="font-size:13px">停用后重启网关；凭据仍保留，重新保存即可启用。</span>
+    </div>
+    {% endif %}
+    <p class="muted" style="font-size:13px">OAuth 授权页显示的应用名可能是
+      “Xiaomi Home (Home Assistant Integration)”，这是复用公开 client id 的正常现象。</p>
+  </div>
+</section>
+
+{# ---------------------------------------------------------------- 树新风 #}
+<section id="treeow">
+  <div class="row" style="justify-content:space-between; margin-top:26px">
+    <h2 style="margin:0">树新风 Treeow</h2>
+    {% if provider_enabled.get('treeow') %}<span class="pill ok">已启用</span>
+    {% elif treeow_saved %}<span class="pill warn">已保存 · 未启用</span>
+    {% else %}<span class="pill">未配置</span>{% endif %}
+  </div>
+  <div class="card">
+    {% if provider_errors.get('treeow') %}<p class="bad" style="font-size:13px">最近一次连接错误：{{ provider_errors.get('treeow') }}</p>{% endif %}
+    <p class="muted">使用 Treeow Home App 的手机号 / 账号登录，首版支持净化器。</p>
+    <form method="post" action="/setup/treeow" class="inline ajax">
+      <input type="hidden" name="verify" value="1">
+      <label>账号<input name="account" value="{{ treeow_account }}" autocomplete="username" placeholder="手机号 / 账号"></label>
+      <label>密码<input name="password" type="password" autocomplete="current-password" placeholder="留空表示不修改"></label>
+      <button type="submit">保存并验证</button>
+    </form>
+    {% if treeow_saved %}
+    <p class="muted" style="font-size:13px">账号已自动填入；只需要重新输入密码。
+      如果 App 里改过密码，这里保存一次即可恢复连接。</p>
+    {% endif %}
+    {% if not provider_enabled.get('treeow') and treeow_saved %}
+    <div class="row" style="margin-top:10px">
+      <form method="post" action="/setup/treeow/enable" class="ajax">
+        <button class="small" type="submit">启用已保存的树新风</button>
+      </form>
+    </div>
+    {% endif %}
+    {{ render_report(reports.get('treeow')) }}
+    {{ device_allow_list('treeow', reports.get('treeow'), allow_lists.get('treeow', [])) }}
+    {% if provider_enabled.get('treeow') %}
+    <div class="row" style="margin-top:10px">
+      <form method="post" action="/setup/treeow/disable" class="ajax">
+        <button class="danger small" type="submit">停用树新风</button>
+      </form>
+      <span class="muted" style="font-size:13px">停用后重启网关；凭据仍保留。</span>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{# ---------------------------------------------------------------- 米家局域网 #}
+<section id="mijia">
+  <div class="row" style="justify-content:space-between; margin-top:26px">
+    <h2 style="margin:0">米家局域网设备</h2>
+    {% if provider_enabled.get('mijia') %}<span class="pill ok">已启用</span>
+    {% elif mijia_devices %}<span class="pill warn">已添加 · 未启用</span>
+    {% else %}<span class="pill">未配置</span>{% endif %}
+  </div>
+  <div class="card">
+    <p class="muted">Wi-Fi 设备走局域网 miIO，不需要小米云参与日常控制。先扫描局域网，
+      再选型号、填 token；保存时会立刻读取一次状态来验证 token。</p>
+    {% if not provider_enabled.get('mijia') and mijia_devices %}
+    <p class="notice" style="font-size:13px">当前未启用局域网 provider。下面这些设备会通过
+      米家云接入；只有 <code>models.py</code> 里的 4 个静态型号才需要本地局域网。</p>
+    {% endif %}
+    <div class="row">
+      <form method="post" action="/setup/mijia/discover" class="ajax">
+        <button class="primary" type="submit">扫描局域网（约 3 秒）</button>
+      </form>
+      {% if provider_enabled.get('mijia') or mijia_devices %}
+      <form method="post" action="/setup/mijia/verify" class="ajax">
+        <button type="submit">验证已添加设备</button>
+      </form>
+      {% endif %}
+      {% if not provider_enabled.get('mijia') and mijia_devices %}
+      <form method="post" action="/setup/mijia/enable" class="ajax">
+        <button type="submit">启用米家局域网</button>
+      </form>
+      {% endif %}
+      {% if mijia_oauth_saved %}
+      <form method="post" action="/setup/mijia/import-oauth" class="ajax">
+        <button type="submit">从已授权的小米账号导入 token</button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if discovery %}
+    <h3 style="font-size:15px; margin:16px 0 8px">扫描结果</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>IP</th><th>did</th><th>hex</th><th>token</th><th></th></tr></thead>
+        <tbody>
+        {% for d in discovery %}
+          <tr>
+            <td class="mono">{{ d.host }}</td>
+            <td class="mono">{{ d.id }}</td>
+            <td class="mono">{{ d.hex_id }}</td>
+            <td>{% if d.token %}<span class="ok">已获取</span>{% else %}<span class="muted">未暴露</span>{% endif %}</td>
+            <td>
+              <button class="small" type="button"
+                      data-id="{{ d.id }}" data-host="{{ d.host }}" data-token="{{ d.token }}"
+                      onclick="fillMijia(this)">填入表单</button>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13px">新固件通常不在广播里返回 token；可以先用上面的
+      「从已授权的小米账号导入 token」，或手动填写 32 位 token。</p>
+    {% endif %}
+
+    <h3 style="font-size:15px; margin:16px 0 8px">添加 / 更新设备</h3>
+    <form method="post" action="/setup/mijia" class="inline ajax" id="mijia-add-form">
+      <input type="hidden" name="verify" value="1">
+      <label>设备 ID<input name="device_id" placeholder="0x... 或十进制 did" required></label>
+      <label>名称<input name="name" placeholder="客厅净化器"></label>
+      <label>型号
+        <select name="model">
+          <option value="zhimi.airpurifier.rma1">净化器 rma1</option>
+          <option value="dmaker.fan.p28">循环扇 p28</option>
+          <option value="chuangmi.plug.m3">插座 m3</option>
+          <option value="yeelink.light.lamp4">台灯 lamp4</option>
+        </select>
+      </label>
+      <label>IP<input name="host" placeholder="192.168.1.20" required></label>
+      <label>Token<input name="token" placeholder="32 位十六进制" autocomplete="off"></label>
+      <button type="submit">保存并验证</button>
+    </form>
+    <p class="muted" style="font-size:13px">目前支持：
+      {% for model in supported_models %}<code>{{ model }}</code>{% if not loop.last %}、{% endif %}{% endfor %}。
+      其他型号请启用「米家云」由云端自动识别；只有需要本地控制时才需要在
+      <code>models.py</code> 补属性映射。</p>
+
+    {% if mijia_devices %}
+    <h3 style="font-size:15px; margin:16px 0 8px">已添加</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>名称</th><th>型号</th><th>IP</th><th>token</th><th>接入</th><th></th></tr></thead>
+        <tbody>
+        {% for d in mijia_devices %}
+          <tr>
+            <td class="mono">{{ d.id }}</td>
+            <td>{{ d.name }}</td>
+            <td class="mono">{{ d.model }}</td>
+            <td class="mono">{{ d.host }}</td>
+            <td>{% if d.id in mijia_tokens %}<span class="ok">已保存</span>{% else %}<span class="bad">缺失</span>{% endif %}</td>
+            <td>{% if d.model in supported_models %}<span class="ok">局域网</span>{% else %}<span class="muted">米家云</span>{% endif %}</td>
+            <td>
+              <form method="post" action="/setup/mijia/remove" class="ajax">
+                <input type="hidden" name="device_id" value="{{ d.id }}">
+                <button class="danger small" type="submit">删除</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <details>
+      <summary>从小米账号密码导入 token（旧版方式，两步验证账号可能失败）</summary>
+      <form method="post" action="/setup/mijia/import" class="inline ajax" style="margin-top:10px">
+        <label>小米账号<input name="username" autocomplete="username"></label>
+        <label>密码<input name="password" type="password" autocomplete="current-password"></label>
+        <label>区域<input name="country" value="{{ mijia_country }}" style="width:70px"></label>
+        <button type="submit">导入</button>
+      </form>
+      <p class="muted" style="font-size:13px">如果这里报 403，先完成上面的小米 OAuth 授权，
+        再用「从已授权的小米账号导入 token」。</p>
+    </details>
+    {{ render_report(reports.get('mijia')) }}
+  </div>
+</section>
+
+{% if plugin_cards %}
+<h2>插件 Provider</h2>
+{% for plugin in plugin_cards %}
+<section id="plugin-{{ plugin.name }}">
+  <div class="row" style="justify-content:space-between; margin-top:16px">
+    <h3 style="margin:0">{{ plugin.label }}</h3>
+    {% if provider_enabled.get(plugin.name) %}<span class="pill ok">已启用</span>
+    {% else %}<span class="pill">未启用</span>{% endif %}
+  </div>
+  <div class="card">
+    {% if provider_errors.get(plugin.name) %}<p class="bad" style="font-size:13px">最近一次连接错误：{{ provider_errors.get(plugin.name) }}</p>{% endif %}
+    {% if plugin.description %}<p class="muted">{{ plugin.description }}</p>{% endif %}
+    <form method="post" action="/setup/plugin/{{ plugin.name }}" class="inline ajax">
+      {% for field in plugin.setup_fields %}
+      <label>{{ field.label }}
+        <input name="{{ field.key }}" type="{{ 'password' if field.secret else 'text' }}"
+               placeholder="{{ field.placeholder }}"
+               value="{{ '' if field.secret else field.default }}">
+      </label>
+      {% endfor %}
+      <button class="primary" type="submit">保存并验证</button>
+    </form>
+    {% if plugin.hint %}<p class="muted" style="font-size:13px">{{ plugin.hint }}</p>{% endif %}
+    {{ render_report(reports.get(plugin.name)) }}
+  </div>
+</section>
+{% endfor %}
+{% endif %}
+
+<h2>重启</h2>
+<div class="card">
+  <p class="muted">保存配置后点击重启。launchd 会自动拉起新进程；前台运行时进程会退出，
+    用 <code>homekit-one run</code> 重新启动即可。重启后到「HomeKit」页扫码配对。</p>
+  <button class="primary" type="button" onclick="homekitOneRestart(this)">重启网关</button>
+</div>
+
+<script>
+function fillMijia(button) {
+  const form = document.getElementById("mijia-add-form");
+  if (!form) return;
+  form.elements.device_id.value = button.dataset.id || "";
+  form.elements.host.value = button.dataset.host || "";
+  form.elements.token.value = button.dataset.token || "";
+  form.scrollIntoView({behavior: "smooth", block: "center"});
+  form.elements.name.focus();
+}
+
+</script>
+</div>
+{% endblock %}

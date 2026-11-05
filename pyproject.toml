@@ -3,23 +3,21 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "homeone"
+name = "homekit-one"
 version = "0.1.0"
-description = "Local-first HomeKit gateway for Mijia, TCL Home and Treeow devices on macOS"
+description = "HomeKit One: local-first HomeKit gateway for Mijia and Treeow devices on macOS"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "home-one contributors" }]
+authors = [{ name = "HomeKit One contributors" }]
 dependencies = [
   "HAP-python[QRCode]>=5.0.0",
   "aiohttp>=3.9",
-  "boto3>=1.34",
   "cryptography>=42",
   "fastapi>=0.110",
   "httpx>=0.27",
   "jinja2>=3.1",
   "micloud>=0.6",
-  "PyJWT>=2.8",
   "python-multipart>=0.0.9",
   "segno>=1.6",
   "tomli-w>=1.0",
@@ -35,10 +33,10 @@ dev = [
 ]
 
 [project.scripts]
-homeone = "homeone.cli:main"
+homekit-one = "homekit_one.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/homeone"]
+packages = ["src/homekit_one"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

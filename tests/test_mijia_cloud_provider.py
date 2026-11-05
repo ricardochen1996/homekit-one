@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeone.config import MijiaCloudConfig
-from homeone.core.model import Capability, Command, DeviceKind
-from homeone.providers.mijia_cloud.provider import MijiaCloudProvider
-from homeone.secrets import SecretsStore
+from homekit_one.config import MijiaCloudConfig
+from homekit_one.core.model import Capability, Command, DeviceKind
+from homekit_one.providers.mijia_cloud.provider import MijiaCloudProvider
+from homekit_one.secrets import SecretsStore
 from tests.test_cloud_spec import prop, service, spec
 
 
@@ -156,9 +156,9 @@ async def test_list_refresh_execute(tmp_path):
 
 
 async def test_cloud_devices_reach_homekit(tmp_path):
-    from homeone.config import Config, FakeConfig, GatewayConfig
-    from homeone.core.manager import DeviceManager
-    from homeone.homekit.bridge import HomeKitBridge
+    from homekit_one.config import Config, FakeConfig, GatewayConfig
+    from homekit_one.core.manager import DeviceManager
+    from homekit_one.homekit.bridge import HomeKitBridge
 
     config = Config(
         gateway=GatewayConfig(
@@ -241,15 +241,16 @@ class FakeBlanketCloud(FakeCloud):
 
 
 async def test_blanket_reaches_homekit_thermostat(tmp_path):
-    from homeone.config import Config, FakeConfig, GatewayConfig
-    from homeone.core.manager import DeviceManager
-    from homeone.homekit.bridge import HomeKitBridge
+    from homekit_one.config import Config, FakeConfig, GatewayConfig
+    from homekit_one.core.manager import DeviceManager
+    from homekit_one.homekit.bridge import HomeKitBridge
 
     config = Config(
         gateway=GatewayConfig(
             state_dir=tmp_path,
             homekit_port=51991,
             poll_intervals={"mijia_cloud": 0.05, "fake": 0.05},
+            extra_switches="all",
         ),
         fake=FakeConfig(enabled=False),
         mijia_cloud=MijiaCloudConfig(enabled=True, username="u", password="p"),
@@ -273,3 +274,94 @@ async def test_blanket_reaches_homekit_thermostat(tmp_path):
     finally:
         await bridge.stop()
         await manager.stop()
+
+
+class FakeVacuumCloud(FakeCloud):
+    def __init__(self) -> None:
+        self.vacuum = {
+            "type": "urn:miot-spec-v2:device:vacuum:0000A006:test:1",
+            "services": [
+                {
+                    "iid": 2,
+                    "type": "urn:miot-spec-v2:service:vacuum:00007810:test:1",
+                    "properties": [
+                        {
+                            "iid": 2,
+                            "type": "urn:miot-spec-v2:property:status:00000000:test:1",
+                            "format": "uint8",
+                            "access": ["read", "notify"],
+                        },
+                        {
+                            "iid": 1,
+                            "type": "urn:miot-spec-v2:property:battery-level:00000000:test:1",
+                            "format": "uint8",
+                            "access": ["read", "notify"],
+                        },
+                    ],
+                    "actions": [
+                        {
+                            "iid": 1,
+                            "type": "urn:miot-spec-v2:action:start-sweep:00002804:test:1",
+                            "in": [],
+                        },
+                        {
+                            "iid": 3,
+                            "type": "urn:miot-spec-v2:action:stop-and-gocharge:000028B4:test:1",
+                            "in": [],
+                        },
+                    ],
+                }
+            ],
+        }
+        self.records = [
+            {
+                "did": "vac1",
+                "name": "扫地机",
+                "model": "xiaomi.vacuum.test",
+                "spec_type": self.vacuum["type"],
+                "isOnline": 1,
+            }
+        ]
+        self.actions: list[tuple[str, int, int, list]] = []
+
+    async def get_spec(self, urn: str):
+        return self.vacuum
+
+    async def get_props(self, params):
+        values = {(2, 2): 4, (2, 1): 88}
+        return [
+            {**param, "value": values[(param["siid"], param["piid"])]}
+            for param in params
+            if (param["siid"], param["piid"]) in values
+        ]
+
+    async def call_action(self, did, siid, aiid, params):
+        self.actions.append((did, siid, aiid, params))
+        return {"code": 0}
+
+
+async def test_vacuum_action_execution(tmp_path):
+    provider = MijiaCloudProvider(
+        MijiaCloudConfig(enabled=True, username="u", password="p"),
+        SecretsStore(tmp_path / "s.json"),
+        tmp_path,
+    )
+    fake = FakeVacuumCloud()
+    provider.client = fake  # type: ignore[assignment]
+    await provider.start()
+    devices = await provider.list_devices()
+    assert len(devices) == 1
+    device = devices[0]
+    assert device.kind is DeviceKind.VACUUM
+    assert Capability.BATTERY in device.capabilities
+
+    values = await provider.refresh(device)
+    assert values[Capability.POWER] is True
+    assert values[Capability.BATTERY] == 88
+
+    await provider.execute(device, Command(Capability.POWER, True))
+    await provider.execute(device, Command(Capability.POWER, False))
+    assert fake.actions == [
+        ("vac1", 2, 1, []),
+        ("vac1", 2, 3, []),
+    ]

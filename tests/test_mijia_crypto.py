@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from homeone.providers.mijia import crypto
-from homeone.providers.mijia.discovery import devices_from_replies
+from homekit_one.providers.mijia import crypto
+from homekit_one.providers.mijia.discovery import devices_from_replies
 
 
 def _reply(device_id: int, stamp: int = 1234, token: bytes | None = None) -> bytes:

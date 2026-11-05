@@ -18,5 +18,4 @@ accessory.state
 # Local agent settings
 .claude/
 pairing.json
-tcl_session.json
 miot_specs/

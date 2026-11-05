@@ -6,7 +6,7 @@ import time
 import httpx
 import respx
 
-from homeone.providers.mijia_cloud.oauth import (
+from homekit_one.providers.mijia_cloud.oauth import (
     OAUTH_CLIENT_ID,
     XiaomiOAuthClient,
     build_auth_url,

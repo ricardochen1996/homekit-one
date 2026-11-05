@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from homeone.core.model import Capability, Command, Mode
-from homeone.providers.mijia.models import MODELS
+from homekit_one.core.model import Capability, Command, Mode
+from homekit_one.providers.mijia.models import MODELS
 
 
 def test_rma1_decode():

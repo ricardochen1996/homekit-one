@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from homeone.registry import DeviceRegistry
+from homekit_one.registry import DeviceRegistry
 
 
 def test_upsert_and_remove(tmp_path):
