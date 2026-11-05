@@ -125,7 +125,7 @@ my_provider = "my_package.plugin:PLUGIN"
 | UV、负离子、显示屏等 | `Switch` | 独立配件，保证每个开关有可读名称 |
 | 体脂秤 | — | 没有可读的重量属性 |
 
-`extra_switches = "minimal"`（默认）让 HomeKit 只保留原生服务和只读参数，额外开关仅对灯和温控开放。可以在配置里改成 `auto`、`all` 或 `none`，也可以直接使用 Web 设备详情页。
+`extra_switches = "minimal"`（默认）让 HomeKit 只保留原生服务和只读参数，所有额外开关（包括水暖毯、扫地机的设置）都不进 Home App，统一在 Web 设备详情页配置；`auto` 会为设备暴露少量常用开关，`all` 暴露全部，`none` 与 minimal 相同（全部关闭）。
 
 ## 快速开始
 

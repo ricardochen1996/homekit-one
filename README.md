@@ -125,7 +125,7 @@ Mijia Cloud identifies devices from their MIoT-Spec URN, so it covers lights, pl
 | UV, anion, display, etc. | `Switch` | Separate accessory so each has a readable name |
 | Body scale | Not supported | No readable weight attribute |
 
-`extra_switches = "minimal"` (the default) keeps HomeKit to native services and readings; extra switches are exposed only for lights and thermostats. Set it to `auto`, `all` or `none` in the config, or use the device detail page in the web UI.
+`extra_switches = "minimal"` (the default) keeps HomeKit to native services and readings; no extra switches (including blanket and vacuum settings) are exposed, and those options live on the device detail page in the web UI. Set it to `auto` for a small set of common switches, `all` for every switch, or `none` (identical to minimal: every extra switch off).
 
 ## Quick start
 
