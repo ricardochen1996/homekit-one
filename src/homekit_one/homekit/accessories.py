@@ -1144,13 +1144,10 @@ def build_accessory(
             extras.append((label, capability, default))
     config = getattr(manager, "config", None)
     extra_mode = getattr(getattr(config, "gateway", None), "extra_switches", "auto")
-    if extra_mode == "none":
+    if extra_mode in ("none", "minimal"):
+        # In minimal mode HomeKit only keeps native services/readings. Every
+        # extra switch (including blanket/vacuum settings) lives in the web UI.
         extras = []
-    elif extra_mode == "minimal":
-        # Keep the desk lamp and electric blanket complete; all other devices
-        # expose only their native services/readings in HomeKit.
-        if device.kind not in (DeviceKind.LIGHT, DeviceKind.THERMOSTAT):
-            extras = []
     elif extra_mode == "auto":
         extras = [item for item in extras if item[1] in AUTO_EXTRA_SWITCHES]
 
