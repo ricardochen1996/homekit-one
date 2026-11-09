@@ -276,6 +276,8 @@ src/homekit_one/
 
 Tests cover miIO crypto and discovery, model maps, MIoT-Spec parsing, cloud property access, Treeow mapping, config validation, the device manager, HomeKit service construction and the web API.
 
+Commit conventions are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Known limits
 
 1. **Cloud providers need the internet.** Treeow has no public LAN protocol, and Mijia cloud devices (including hub sub-devices) depend on Xiaomi Cloud.

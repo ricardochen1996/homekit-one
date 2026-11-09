@@ -276,6 +276,8 @@ src/homekit_one/
 
 测试覆盖 miIO 加解密与发现、型号映射、MIoT-Spec 解析、云属性读写、Treeow 映射、配置校验、DeviceManager、HomeKit 服务构建和 Web API。
 
+提交规范见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
 ## 已知边界
 
 1. **云 provider 依赖外网。** Treeow 没有公开局域网协议；米家云设备（包括中枢子设备）依赖小米云。
